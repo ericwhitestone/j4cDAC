@@ -82,7 +82,7 @@ private:
     static void callback(void * user_data, uint8_t * stream_raw, int len) {
         auto buf = reinterpret_cast<sample *>(stream_raw);
         auto deque = reinterpret_cast<std::deque<sample> *>(user_data);
-        for (int i = 0; i < (len / sizeof(sample)); i++) {
+        for (size_t i = 0; i < (len / sizeof(sample)); i++) {
             if (!deque->empty()) {
                 buf[i] = deque->front();
                 deque->pop_front();
@@ -247,7 +247,7 @@ int main(int argc, char **argv) {
 
         glr_draw(point_buf);
 
-        for (int i = 0; i < point_buf.size(); i++) {
+        for (size_t i = 0; i < point_buf.size(); i++) {
             point_buf[i].x = point_buf[i].x * x_size + (x_offset * 32767);
             point_buf[i].y = point_buf[i].y * y_size + (y_offset * 32767);
             point_buf[i].r *= brightness;

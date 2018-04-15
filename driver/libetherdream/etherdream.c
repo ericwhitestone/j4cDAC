@@ -307,6 +307,7 @@ static void dump_resp(struct etherdream *d) {
  */
 static int dac_connect(struct etherdream *d) {
 	struct etherdream_conn *conn = &d->conn;
+	struct sockaddr_in addr = {0};
 	memset(conn, 0, sizeof *conn);
 
 	// Open socket
@@ -319,10 +320,9 @@ static int dac_connect(struct etherdream *d) {
 	unsigned long nonblocking = 1;
 	ioctl(conn->dc_sock, FIONBIO, &nonblocking);
 
-	struct sockaddr_in addr = {
-		.sin_family = AF_INET,
-		.sin_addr.s_addr = d->addr.s_addr, .sin_port = htons(7765)
-	};
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = d->addr.s_addr;
+	addr.sin_port = htons(7765);
 
 	// Because the socket is nonblocking, this will always error...
 	connect(conn->dc_sock, (struct sockaddr *)&addr, (int)sizeof addr);
@@ -457,6 +457,7 @@ static int dac_get_acks(struct etherdream *d, int wait) {
 static int dac_send_data(struct etherdream *d, struct dac_point *data,
                          int npoints, int rate) {
 	int res;
+	struct begin_command b;
 	const struct dac_status *st = &d->conn.resp.dac_status;
 
 	if (st->playback_state == 0) {
@@ -478,8 +479,10 @@ static int dac_send_data(struct etherdream *d, struct dac_point *data,
 	    && !d->conn.dc_begin_sent) {
 		trace(d, "L: Sending begin command...\n");
 
-		struct begin_command b = { .command = 'b', .point_rate = (uint32_t)rate,
-		                           .low_water_mark = 0 };
+		b.command = 'b';
+ 		b.point_rate = (uint32_t)rate;
+	        b.low_water_mark = 0;
+
 		if ((res = send_all(d, (const char *)&b, sizeof b)) < 0)
 			return res;
 
@@ -822,7 +825,8 @@ int etherdream_stop(struct etherdream *d) {
  */
 static void *watch_for_dacs(void *arg) {
 	(void)arg;
-
+	
+	struct sockaddr_in addr;
 	int sock = socket(AF_INET, SOCK_DGRAM, 0);
 	if (sock < 0) {
 		log_socket_error(NULL, "socket");
@@ -836,10 +840,9 @@ static void *watch_for_dacs(void *arg) {
 		return NULL;
 	}
 
-	struct sockaddr_in addr = {
-		.sin_family = AF_INET,
-		.sin_addr.s_addr = htonl(INADDR_ANY), .sin_port = htons(7654)
-	};
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	addr.sin_port = htons(7654);
 	if (bind(sock, (struct sockaddr *)&addr, sizeof addr) < 0) {
 		log_socket_error(NULL, "bind");
 		return NULL;
