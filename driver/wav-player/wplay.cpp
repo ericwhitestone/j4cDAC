@@ -127,6 +127,7 @@ static bool valid_offset(double offset) {
 int main(int argc, char **argv) {
 
     bool do_flip_x = false, do_flip_y = false;
+    bool quit = false;
     double x_size = 0.5, y_size = 0.5, x_rel_offset = 0, y_rel_offset = 0;
     double initial_seek = 0;
     double brightness = 1;
@@ -233,10 +234,23 @@ int main(int argc, char **argv) {
         etherdream_connect(ed);
     }
 
-    while (!SDL_QuitRequested()) {
+    while (!quit) 
+    {
         /* Handle SDL events */
         SDL_Event event;
-        while (SDL_PollEvent(&event)) { }
+        while (SDL_PollEvent(&event)) 
+	{
+            if (event.type == SDL_QUIT)
+            {
+                std::cout << "SDL quit event";
+                quit = true;
+            }
+	}
+	if (quit == true)
+	{
+            continue;
+	}
+	
 
         size_t pts = f.read(1600, point_buf, audio_buf);
         if (!pts) {
@@ -265,6 +279,6 @@ int main(int argc, char **argv) {
             std::this_thread::sleep_until(t);
         }
     }
-
+    SDL_Quit();
     return 0;
 }
